@@ -82,7 +82,7 @@ pushd "$install_dir"
 	#"php$php_version" artisan key:generate -n
 	"php$php_version" artisan optimize
 	"php$php_version" artisan storage:link
-	"php$php_version" artisan migrate -y
+	"php$php_version" artisan migrate --force
 	"php$php_version" artisan upgrade:run
 popd
 
