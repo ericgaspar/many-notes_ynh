@@ -65,7 +65,7 @@ ram.runtime = "50M"
     [resources.ports]
 
     [resources.apt]
-    packages = "mariadb-server, php8.4"
+    packages = "mariadb-server, php8.4-mysql"
 
     [resources.database]
     type = "mysql"
