@@ -8,19 +8,19 @@ source _common.sh
 source /usr/share/yunohost/helpers
 
 #=================================================
-# STOP SYSTEMD SERVICE
-#=================================================
-ynh_script_progression "Stopping $app's systemd service..."
-
-ynh_systemctl --service="$app" --action="stop"
-
-#=================================================
 # ENSURE DOWNWARD COMPATIBILITY
 #=================================================
 ynh_script_progression "Ensuring downward compatibility..."
 
-ynh_app_setting_set_default --key=php_upload_max_filesize --value=50M
-ynh_app_setting_set_default --key=php_post_max_size --value=50M
+ynh_app_setting_set_default --key=php_upload_max_filesize --value=100M
+ynh_app_setting_set_default --key=php_post_max_size --value=100M
+
+#=================================================
+# INSTALL DEPENDENCIES
+#=================================================
+ynh_script_progression "Installing dependencies..."
+
+ynh_nodejs_install
 
 #=================================================
 # DOWNLOAD, CHECK AND UNPACK SOURCE
@@ -34,7 +34,7 @@ ynh_setup_source --dest_dir="$install_dir" --full_replace --keep=".env"
 #=================================================
 ynh_script_progression "Updating $app's configuration files..."
 
-ynh_config_add --template="some_config_file" --destination="$install_dir/some_config_file"
+ynh_config_add --template=".env" --destination="$install_dir/.env"
 
 #=================================================
 # REAPPLY SYSTEM CONFIGURATION
@@ -45,20 +45,36 @@ ynh_config_add_phpfpm
 
 ynh_config_add_nginx
 
-ynh_config_add_systemd
+#=================================================
+# INSTALL APP WITH COMPOSER
+#=================================================
+ynh_script_progression "Installing app with Composer..."
 
-yunohost service add "$app" --description="A short description of the app" --log="/var/log/$app/$app.log"
-
-ynh_config_add_logrotate
-
-ynh_config_add_fail2ban --logpath="/var/log/nginx/${domain}-error.log" --failregex="Regex to match into the log for a failed login"
+ynh_composer_install
+ynh_composer_exec install --no-dev --optimize-autoloader
 
 #=================================================
-# START SYSTEMD SERVICE
+# INSTALL
 #=================================================
-ynh_script_progression "Starting $app's systemd service..."
+ynh_script_progression "Installing the app..."
 
-ynh_systemctl --service="$app" --action="start"
+pushd "$install_dir"
+ 	ynh_hide_warnings ynh_exec_as_app npm install
+ 	ynh_hide_warnings ynh_exec_as_app npm run build
+popd
+
+#=================================================
+# BUILDING
+#=================================================
+ynh_script_progression "configuring $app..."
+
+pushd "$install_dir"
+	"php$php_version" artisan key:generate
+	"php$php_version" artisan optimize
+	"php$php_version" artisan storage:link
+	"php$php_version" artisan migrate --force
+	"php$php_version" artisan upgrade:run
+popd
 
 #=================================================
 # END OF SCRIPT

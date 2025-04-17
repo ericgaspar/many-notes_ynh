@@ -9,18 +9,18 @@ source ../settings/scripts/_common.sh
 source /usr/share/yunohost/helpers
 
 #=================================================
+# INSTALL DEPENDENCIES
+#=================================================
+ynh_script_progression "Installing dependencies..."
+
+ynh_nodejs_install
+
+#=================================================
 # RESTORE THE APP MAIN DIR
 #=================================================
 ynh_script_progression "Restoring the app main directory..."
 
 ynh_restore "$install_dir"
-
-#=================================================
-# RESTORE THE DATA DIRECTORY
-#=================================================
-ynh_script_progression "Restoring the data directory..."
-
-ynh_restore "$data_dir"
 
 #=================================================
 # RESTORE THE MYSQL DATABASE
@@ -38,18 +38,10 @@ ynh_restore "/etc/php/$php_version/fpm/pool.d/$app.conf"
 
 ynh_restore "/etc/nginx/conf.d/$domain.d/$app.conf"
 
-ynh_restore "/etc/systemd/system/$app.service"
-systemctl enable "$app.service" --quiet
-
-yunohost service add "$app" --description="A short description of the app" --log="/var/log/$app/$app.log"
-
 #=================================================
 # RELOAD NGINX AND PHP-FPM OR THE APP SERVICE
 #=================================================
 ynh_script_progression "Reloading NGINX web server and $app's service..."
-
-### Typically you only have either $app or PHP-FPM but not both at the same time...
-ynh_systemctl --service="$app" --action="start"
 
 ynh_systemctl --service="php$php_version-fpm" --action=reload
 
