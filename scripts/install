@@ -73,15 +73,13 @@ pushd "$install_dir"
  	ynh_hide_warnings ynh_exec_as_app npm run build
 popd
 
-touch $install_dir/database/sqlite/database.sqlite
-
 #=================================================
 # BUILDING
 #=================================================
 ynh_script_progression "configuring $app..."
 
 pushd "$install_dir"
-	"php$php_version" artisan artisan key:generate -n
+	#"php$php_version" artisan key:generate -n
 	"php$php_version" artisan optimize
 	"php$php_version" artisan storage:link
 	"php$php_version" artisan migrate
